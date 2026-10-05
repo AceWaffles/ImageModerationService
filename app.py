@@ -1,6 +1,7 @@
-"""Image moderation service: measures an image with every detector and returns the raw signals.
+"""Image moderation service: measures an image with every detector, applies the shared policy
+(policy.py) and returns the verdict with the raw signals behind it.
 
-It makes no allow/review/reject decisions; callers apply their own policy to the signals.
+Callers decide what to do with a verdict (refuse, hold for review, or only record it).
 Stateless: images are never written to disk or logged.
 
 Detectors
@@ -28,7 +29,9 @@ from fastapi import FastAPI, HTTPException, Request
 from nudenet import NudeDetector
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-SERVICE_VERSION = "1.0.0"
+import policy
+
+SERVICE_VERSION = "1.1.0"
 MAX_BYTES = 20 * 1024 * 1024
 MAX_PIXELS = 50_000_000
 OPENAI_MODEL = "omni-moderation-latest"
@@ -91,7 +94,8 @@ app = FastAPI(title="Image Moderation Service", version=SERVICE_VERSION, docs_ur
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": SERVICE_VERSION, "clients": len(_client_keys()),
+    return {"status": "ok", "version": SERVICE_VERSION, "policy_version": policy.POLICY_VERSION,
+            "clients": len(_client_keys()),
             "openai_configured": bool(os.environ.get("OPENAI_API_KEY"))}
 
 
@@ -122,7 +126,9 @@ async def analyze(request: Request):
             asyncio.to_thread(_nudenet_detections, jpeg))
     except Exception as ex:  # any missing signal fails the whole request: callers fail closed
         raise HTTPException(503, f"A detector is unavailable ({type(ex).__name__}).")
-    return {"service_version": SERVICE_VERSION, "caller": caller,
+    verdict, reasons = policy.evaluate(openai, gantman, nudenet)
+    return {"verdict": verdict, "reasons": reasons, "policy_version": policy.POLICY_VERSION,
+            "service_version": SERVICE_VERSION, "caller": caller,
             "models": {"openai": OPENAI_MODEL, "gantman": GANTMAN_MODEL, "nudenet": NUDENET_MODEL},
             "openai": openai, "gantman": gantman, "nudenet": nudenet,
             "elapsed_ms": round((time.perf_counter() - started) * 1000)}

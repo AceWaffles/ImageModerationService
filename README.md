@@ -1,7 +1,8 @@
 # Image Moderation Service
 
-A small, stateless HTTP service that measures an image with several detectors and returns the raw
-signals. It makes no allow/review/reject decisions — each caller applies its own policy.
+A small, stateless HTTP service that measures an image with several detectors, applies one shared
+policy (`policy.py`) and returns an **allow / review / reject** verdict with the raw signals behind
+it. Callers decide how to act on a verdict (refuse, hold for review, or only record it).
 Images are never written to disk or logged.
 
 | Detector | What it returns | License |
@@ -17,7 +18,8 @@ only over HTTP.
 
 - `GET /health` — no auth; status and whether OpenAI is configured.
 - `POST /v1/analyze` — header `X-Api-Key`, body = raw image bytes (JPEG/PNG/WebP/GIF, ≤ 20 MB).
-  Returns `openai`, `gantman`, `nudenet`, `models`, `caller`, `elapsed_ms`.
+  Returns `verdict` (`allow`/`review`/`reject`), `reasons`, `policy_version`, the raw `openai`,
+  `gantman` and `nudenet` signals, `models`, `caller` and `elapsed_ms`.
   `401` bad key · `413` too large · `415` not an image · `503` a detector failed (callers should fail closed).
 
 ## Configuration
@@ -26,5 +28,9 @@ only over HTTP.
 |---|---|
 | `OPENAI_API_KEY` | required |
 | `MODERATION_CLIENT_KEYS` | required; `name=key` pairs, comma-separated, one per caller |
+| `MODERATION_GANTMAN_EXPLICIT` | optional policy threshold (default 0.70) |
+| `MODERATION_NUDENET_EXPLICIT` | optional policy threshold (default 0.50) |
 
 Run bound to localhost: `uvicorn app:app --host 127.0.0.1 --port 5390`
+
+Policy tests: `python -m unittest`
