@@ -31,6 +31,8 @@ only over HTTP.
 | `MODERATION_GANTMAN_EXPLICIT` | optional policy threshold (default 0.70) |
 | `MODERATION_NUDENET_EXPLICIT` | optional policy threshold (default 0.50) |
 
-Run bound to localhost: `uvicorn app:app --host 127.0.0.1 --port 5390`
+Run bound to localhost: `uvicorn app:app --host 127.0.0.1 --port 5390`, or in production
+`python run_service.py <secrets.json>` (loads the variables above from a JSON file readable only by the
+service account).
 
 Policy tests: `python -m unittest`
