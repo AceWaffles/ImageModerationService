@@ -11,7 +11,7 @@ Images are never written to disk or logged.
 | GantMan nsfw_model (mobilenet_v2_140_224, 1.2.0) | drawings / hentai / neutral / porn / sexy probabilities | MIT |
 | NudeNet 320n (3.4.2) | body-part detections (exposed / covered) | AGPL-3.0 |
 
-Because NudeNet is AGPL-3.0, this service is licensed AGPL-3.0 (see `LICENSE`). Callers talk to it
+Because NudeNet is AGPL-3.0, this service is licensed AGPL-3.0 (see `LICENSE`). The bundled GantMan model keeps its own MIT notice in `models/LICENSE-gantman-nsfw_model.md`. Callers talk to it
 only over HTTP.
 
 ## API
